@@ -20,7 +20,7 @@ SUBDIRS := $(KPATH)
 ##
 SRC :=                                  \
 main.cpp								\
-button.cpp
+EMGsensor.cpp
 
 ##
 ## List here additional static libraries with relative path
