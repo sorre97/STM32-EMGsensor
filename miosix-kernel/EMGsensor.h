@@ -1,8 +1,10 @@
 #ifndef EMGsensor_H
 #define EMGsensor_H
 
+
 #include <miosix.h>
-#include <queue.h>
+#include <queue>
+
 
 using namespace std;
 
@@ -30,11 +32,13 @@ public:
     uint16_t readPolling();
     /* Get value from synch queue */
     uint16_t getValue();
+    /* Put value in synch queue */
+    void putValue(const uint16_t &val);
 
 private:
     // Variables
     /* List of emg sensor values */
-    miosix::Queue<uint16_t, 20> emgValues;
+    miosix::Queue<uint16_t, 50> emgValues;
 
     // Functions
     /* Enables ADC */

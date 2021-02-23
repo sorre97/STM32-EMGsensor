@@ -1,5 +1,5 @@
 #include "EMGsensor.h"
-#include "stm32f401xe.h"
+//#include "stm32f401xe.h"
 
 /**
  * EMGsensor()
@@ -46,6 +46,7 @@ EMGsensor::~EMGsensor() {}
 void EMGsensor::initADC()
 {
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; // enabling ADC clock
+    ADC1->SR &= ~(ADC_SR_EOC);          // resetting EOC state
     ADC1->SQR3 &= ~(ADC_SQR3_SQ1);      // channel 0 select
     ADC1->SQR1 &= ~(ADC_SQR1_L);        // single conversion
     ADC1->SMPR1 |= ADC_SMPR2_SMP0;      // 480 cycles for channel 0
@@ -66,14 +67,19 @@ void EMGsensor::configurePolling()
 
 /**
  * configureInterrupt()
- * Configures ADC for interrupt
+ * Configures ADC for interrupt using EOCIE flag
  * Access: private
  */
 void EMGsensor::configureInterrupt()
 {
-    ADC1->CR1 |= ADC_CR1_EOCIE; // Enabling interrupt at EOC
+    ADC1->CR1 |= ADC_CR1_EOCIE;         // enabling interrupt at EOC
 
+    NVIC_EnableIRQ(ADC_IRQn);           // enabling NVIC for ADC
+    NVIC_SetPriority(ADC_IRQn, 5);      // low priority 15
+
+    //ADC1->CR2 |= (ADC_CR2_CONT);      // continue conversion mode
 }
+
 
 /* TODO */
 void EMGsensor::configureDMA()
@@ -81,9 +87,8 @@ void EMGsensor::configureDMA()
     return;
 }
 
-/* Sensor reading */
 /**
- * uint16_t readValue()
+ * readValue()
  * This function reads converted ADC value in the data register and returns it
  * Access: public
  * Return type: uint16_t
@@ -96,10 +101,30 @@ uint16_t EMGsensor::readPolling()
     return ADC1->DR;
 }
 
-/* TODO */
+/**
+ * getValue()
+ * Wrapper function of get for Queue class
+ * This function gets a value from the queue and returns it
+ * If the queue is empty, the thread is put to sleep until notify
+ * Access: public
+ * Return type: uint16_t
+ */
 uint16_t EMGsensor::getValue()
 {
     uint16_t emgValue;
     EMGsensor::emgValues.get(emgValue);
     return emgValue;
+}
+
+/**
+ * putValue()
+ * Wrapper function of put for Queue class
+ * This function puts an ADC converted value into queue of values.
+ * If the queue is full, the thread is put to sleep until notify
+ * Access: public
+ * Return type: void
+ */
+void EMGsensor::putValue(const uint16_t &val)
+{
+    EMGsensor::emgValues.put(val);
 }
