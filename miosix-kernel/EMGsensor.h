@@ -4,6 +4,7 @@
 
 #include <miosix.h>
 #include <queue>
+#include "MSX_HAL.h"
 
 
 using namespace std;

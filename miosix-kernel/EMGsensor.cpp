@@ -1,4 +1,5 @@
 #include "EMGsensor.h"
+#include "MSX_HAL.h"
 //#include "stm32f401xe.h"
 
 /**
@@ -18,8 +19,8 @@ EMGsensor::EMGsensor() : EMGsensor::EMGsensor(EMGsensormod::POLLING) {}
  */
 EMGsensor::EMGsensor(EMGsensormod::Mode mode)
 {
-    initADC();                         // enables ADC
-    GPIOA->MODER |= GPIO_MODER_MODER0; // PA0 set as analog
+    initADC(); // enables ADC
+    __MSX_HAL_MASK_SET(GPIOA->MODER, GPIO_MODER_MODER0); // PA0 set as analog
 
     if (mode == EMGsensormod::POLLING) // POLLING
     {
@@ -45,12 +46,12 @@ EMGsensor::~EMGsensor() {}
  */
 void EMGsensor::initADC()
 {
-    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; // enabling ADC clock
-    ADC1->SR &= ~(ADC_SR_EOC);          // resetting EOC state
-    ADC1->SQR3 &= ~(ADC_SQR3_SQ1);      // channel 0 select
-    ADC1->SQR1 &= ~(ADC_SQR1_L);        // single conversion
-    ADC1->SMPR1 |= ADC_SMPR2_SMP0;      // 480 cycles for channel 0
-    ADC1->CR2 |= (ADC_CR2_ADON);        // turning ADC on
+    __MSX_HAL_MASK_SET(RCC->APB2ENR, RCC_APB2ENR_ADC1EN);   // enabling ADC clock
+    __MSX_HAL_MASK_CLEAR(ADC1->SR, ADC_SR_EOC);             // resetting EOC state
+    __MSX_HAL_MASK_CLEAR(ADC1->SQR3, ADC_SQR3_SQ1);         // channel 0 select
+    __MSX_HAL_MASK_CLEAR(ADC1->SQR1, ADC_SQR1_L);           // single conversion
+    __MSX_HAL_MASK_SET(ADC1->SMPR1, ADC_SMPR2_SMP0);        // 480 cycles for channel 0
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_ADON);            // turning ADC on       
 }
 
 /**
@@ -72,7 +73,7 @@ void EMGsensor::configurePolling()
  */
 void EMGsensor::configureInterrupt()
 {
-    ADC1->CR1 |= ADC_CR1_EOCIE;         // enabling interrupt at EOC
+    __MSX_HAL_MASK_SET(ADC1->CR1, ADC_CR1_EOCIE); // enabling interrupt at EOC
 
     NVIC_EnableIRQ(ADC_IRQn);           // enabling NVIC for ADC
     NVIC_SetPriority(ADC_IRQn, 5);      // low priority 15
@@ -95,8 +96,8 @@ void EMGsensor::configureDMA()
  */
 uint16_t EMGsensor::readPolling()
 {
-    ADC1->CR2 |= ADC_CR2_SWSTART;
-    while (!(ADC1->SR & ADC_SR_EOC))
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_SWSTART);
+    while (!__MSX_HAL_MASK_CHECK(ADC1->SR, ADC_SR_EOC))
         ;
     return ADC1->DR;
 }

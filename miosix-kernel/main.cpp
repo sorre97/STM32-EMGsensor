@@ -6,6 +6,7 @@
 #include <miosix/kernel/scheduler/scheduler.h>
 #include <thread>
 #include "EMGsensor.h"
+#include "MSX_HAL.h"
 //#include "stm32f401xe.h"
 
 // namespaces
@@ -27,7 +28,7 @@ void __attribute__((naked)) ADC_IRQHandler()
 void __attribute__((used)) ADC_IRQHandlerImpl()
 {
     NVIC_ClearPendingIRQ(ADC_IRQn);     
-    ADC1->SR &= ~(ADC_SR_EOC);          // resetting EOC state
+    __MSX_HAL_MASK_CLEAR(ADC1->SR, ADC_SR_EOC);        // resetting EOC state
     
     if(waiting==nullptr) return;
     waiting->IRQwakeup();
@@ -54,7 +55,7 @@ void samplingLoop()
 {
     while(1)
     {
-        ADC1->CR2 |= ADC_CR2_SWSTART;        // start ADC (For now, started by software. Next: started by TIM)
+        __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_SWSTART);   // start ADC by software
         
         FastInterruptDisableLock dLock;
         waiting=Thread::IRQgetCurrentThread();
