@@ -47,11 +47,12 @@ EMGsensor::~EMGsensor() {}
 void EMGsensor::initADC()
 {
     __MSX_HAL_MASK_SET(RCC->APB2ENR, RCC_APB2ENR_ADC1EN);   // enabling ADC clock
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_ADON);            // turning ADC on   
     __MSX_HAL_MASK_CLEAR(ADC1->SR, ADC_SR_EOC);             // resetting EOC state
     __MSX_HAL_MASK_CLEAR(ADC1->SQR3, ADC_SQR3_SQ1);         // channel 0 select
+    __MSX_HAL_MASK_CLEAR(ADC1->CR1, ADC_CR1_RES);           // 12 bit resolution
     __MSX_HAL_MASK_CLEAR(ADC1->SQR1, ADC_SQR1_L);           // single conversion
     __MSX_HAL_MASK_SET(ADC1->SMPR1, ADC_SMPR2_SMP0);        // 480 cycles for channel 0
-    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_ADON);            // turning ADC on       
 }
 
 /**
@@ -76,9 +77,11 @@ void EMGsensor::configureInterrupt()
     __MSX_HAL_MASK_SET(ADC1->CR1, ADC_CR1_EOCIE); // enabling interrupt at EOC
 
     NVIC_EnableIRQ(ADC_IRQn);           // enabling NVIC for ADC
-    NVIC_SetPriority(ADC_IRQn, 5);      // low priority 15
+    NVIC_SetPriority(ADC_IRQn, 15);     // low priority 15
 
-    //ADC1->CR2 |= (ADC_CR2_CONT);      // continue conversion mode
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_CONT);   // continue conversion mode
+    __MSX_HAL_MASK_CLEAR(ADC1->CR2, ADC_CR2_EOCS); // EOCS sequential conversion flag (for continuos conversions)  
+    __MSX_HAL_MASK_SET(ADC->CCR, ADC_CCR_ADCPRE);  // Prescaler by 8
 }
 
 
@@ -112,9 +115,39 @@ uint16_t EMGsensor::readPolling()
  */
 uint16_t EMGsensor::getValue()
 {
-    uint16_t emgValue;
+    uint16_t emgValue = 0;
     EMGsensor::emgValues.get(emgValue);
     return emgValue;
+}
+
+/**
+ * IRQgetValue()
+ * getValue variant to be used inside IRQ
+ * Wrapper function of IRQget for Queue class
+ * This function gets a value from the queue and returns it
+ * If the queue is empty, the thread is put to sleep until notify
+ * Access: public
+ * Return type: uint16_t
+ */
+uint16_t EMGsensor::IRQgetValue()
+{
+    uint16_t emgValue = 0;
+    EMGsensor::emgValues.IRQget(emgValue);
+    return emgValue;
+}
+
+/**
+ * queueSize()
+ * Wrapper function of size for Queue class
+ * This function returns the size of the queue
+ * Access: public
+ * Return type: unsigned int
+ */
+unsigned int EMGsensor::queueSize()
+{
+    unsigned int size = 0;
+    size = EMGsensor::emgValues.size();
+    return size;
 }
 
 /**
@@ -128,4 +161,45 @@ uint16_t EMGsensor::getValue()
 void EMGsensor::putValue(const uint16_t &val)
 {
     EMGsensor::emgValues.put(val);
+}
+
+/**
+ * IRQputValue()
+ * putValue variant to be used inside IRQ
+ * Wrapper function of IRQput for Queue class
+ * This function puts an ADC converted value into queue of values.
+ * This function returns true only if the queue is not full
+ * Access: public
+ * Return type: bool
+ */
+bool EMGsensor::IRQputValue(const uint16_t &val)
+{
+    bool valid = EMGsensor::emgValues.IRQput(val);
+    return valid;
+}
+
+/**
+ * isQueueFull()
+ * Wrapper function of isFull for Queue class
+ * This function returns true only if the queue is full
+ * Access: public
+ * Return type: bool
+ */
+bool EMGsensor::isQueueFull()
+{
+    bool full = EMGsensor::emgValues.isFull();
+    return full;
+}
+
+/**
+ * isQueueEmpty()
+ * Wrapper function of isEmpty for Queue class
+ * This function returns true only if the queue is empty
+ * Access: public
+ * Return type: bool
+ */
+bool EMGsensor::isQueueEmpty()
+{
+    bool empty = EMGsensor::emgValues.isEmpty();
+    return empty;
 }

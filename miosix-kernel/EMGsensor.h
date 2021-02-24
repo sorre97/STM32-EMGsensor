@@ -33,13 +33,23 @@ public:
     uint16_t readPolling();
     /* Get value from synch queue */
     uint16_t getValue();
+    /* Get value from synch queue (for IRQ) */
+    uint16_t IRQgetValue();
+    /* Get size of stored emgValues */
+    unsigned int queueSize();
     /* Put value in synch queue */
     void putValue(const uint16_t &val);
+    /* Put value in synch queue (for IRQ) */
+    bool IRQputValue(const uint16_t &val);
+    /* check if queue is full */
+    bool isQueueFull();
+    /* check if queue is empty */
+    bool isQueueEmpty();
 
 private:
     // Variables
     /* List of emg sensor values */
-    miosix::Queue<uint16_t, 50> emgValues;
+    miosix::Queue<uint16_t, 100> emgValues;
 
     // Functions
     /* Enables ADC */
