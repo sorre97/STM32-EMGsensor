@@ -19,8 +19,8 @@ SUBDIRS := $(KPATH)
 ## List here your source files (both .s, .c and .cpp)
 ##
 SRC :=                                  \
-main.cpp								\
-button.cpp
+main.cpp																\
+EMGsensor.cpp
 
 ##
 ## List here additional static libraries with relative path
