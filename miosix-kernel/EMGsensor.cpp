@@ -52,7 +52,7 @@ void EMGsensor::initADC()
     __MSX_HAL_MASK_CLEAR(ADC1->SQR3, ADC_SQR3_SQ1);         // channel 0 select
     __MSX_HAL_MASK_CLEAR(ADC1->CR1, ADC_CR1_RES);           // 12 bit resolution
     __MSX_HAL_MASK_CLEAR(ADC1->SQR1, ADC_SQR1_L);           // single conversion
-    __MSX_HAL_MASK_SET(ADC1->SMPR1, ADC_SMPR2_SMP0);        // 480 cycles for channel 0
+    //__MSX_HAL_MASK_SET(ADC1->SMPR1, ADC_SMPR2_SMP0);        // 480 cycles for channel 0
 }
 
 /**
@@ -74,16 +74,48 @@ void EMGsensor::configurePolling()
  */
 void EMGsensor::configureInterrupt()
 {
-    __MSX_HAL_MASK_SET(ADC1->CR1, ADC_CR1_EOCIE); // enabling interrupt at EOC
-
     NVIC_EnableIRQ(ADC_IRQn);           // enabling NVIC for ADC
-    NVIC_SetPriority(ADC_IRQn, 15);     // low priority 15
+    NVIC_SetPriority(ADC_IRQn, 5);     // medium priority 5
 
-    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_CONT);   // continue conversion mode
-    __MSX_HAL_MASK_CLEAR(ADC1->CR2, ADC_CR2_EOCS); // EOCS sequential conversion flag (for continuos conversions)  
-    __MSX_HAL_MASK_SET(ADC->CCR, ADC_CCR_ADCPRE);  // Prescaler by 8
+    __MSX_HAL_MASK_SET(ADC1->CR1, ADC_CR1_EOCIE);    // enabling interrupt at EOC
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_EOCS);     // EOCS single conversion flag
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_EXTEN_0);  // external trigger detection on rising edge
+    __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_EXTSEL_3); // trigger on external event TIM3 TRGO
+
+    EMGsensor::initTim();
 }
 
+/**
+ * initTim()
+ * Configures TIM3 to output trigger event with Xhz frequency
+ * TIM3 frequency = 84Mhz / (counter+1 + prescaler+1)
+ * Access: private
+ */
+void EMGsensor::initTim()
+{
+    {
+        miosix::FastInterruptDisableLock dLock;
+        __MSX_HAL_MASK_SET(RCC->APB1ENR, RCC_APB1ENR_TIM3EN);   // enable TIM3 clock
+        RCC_SYNC();
+    }
+
+    __MSX_HAL_MASK_CLEAR(TIM3->SMCR, TIM_SMCR_SMS); // internal clock
+    __MSX_HAL_MASK_SET(TIM3->CR1, TIM_CR1_CKD_0);   // tDTS=tCK_INT
+
+
+    __MSX_HAL_MASK_CLEAR(TIM3->CR1, TIM_CR1_CMS);   // edge align mode
+    __MSX_HAL_MASK_CLEAR(TIM3->CR1, TIM_CR1_DIR);   // upcounting
+    __MSX_HAL_MASK_SET(TIM3->CR2, TIM_CR2_MMS_1);   // update event as output trigger
+
+    // 500Hz sampling
+    __MSX_HAL_REG_SET(TIM3->PSC, 42-1);             // prescaler 
+    __MSX_HAL_REG_SET(TIM3->ARR, 1000-1);           // counter register, SHOULD BE 2000, for some reason 42Mhz and not 84Mhz
+
+    __MSX_HAL_MASK_SET(TIM3->EGR, TIM_EGR_UG);      // update ARR shadow register
+    __MSX_HAL_REG_CLEAR(TIM3->SR);                  // clear interrupt flag caused by setting UG
+
+    __MSX_HAL_MASK_SET(TIM3->CR1, TIM_CR1_CEN);     // enabling timer
+}
 
 /* TODO */
 void EMGsensor::configureDMA()

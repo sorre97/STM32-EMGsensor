@@ -1,7 +1,6 @@
 #ifndef EMGsensor_H
 #define EMGsensor_H
 
-
 #include <miosix.h>
 #include <queue>
 #include "MSX_HAL.h"
@@ -19,6 +18,12 @@ namespace EMGsensormod
         DMA
     };
 } // namespace EMGsensormod
+
+/**
+ * EMGsensor class
+ * This class is used to handle EMG sensor various configuration
+ * It also contains a Queue<uint16_t, SIZE> where values can be stored.
+*/
 
 class EMGsensor
 {
@@ -50,7 +55,7 @@ private:
     // Variables
     /* List of emg sensor values */
     miosix::Queue<uint16_t, 100> emgValues;
-
+    
     // Functions
     /* Enables ADC */
     void initADC();
@@ -60,6 +65,8 @@ private:
     void configureInterrupt();
     /* Configure EMG sensor in DMA mode */
     void configureDMA();
+    /* Init function for ADC timer trigger */
+    void initTim();
     /* Assignment operator */
     EMGsensor &operator=(const EMGsensor &other) = delete;
     /* Copy constructor */
