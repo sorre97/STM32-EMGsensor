@@ -11,6 +11,7 @@
 #include <condition_variable>
 #include "EMGsensor.h"
 #include "MSX_HAL.h"
+#include "filtfilt.h"
 
 //#include "stm32f401xe.h"
 
@@ -22,9 +23,9 @@ using namespace std;
 using namespace miosix;
 
 // contants
-const unsigned int _BUFF_SIZE = 64;
+const unsigned int _BUFF_SIZE = 300;
 const unsigned int _NUM_BUFF = 2;
-const unsigned int _BUFF_SIZE2 = 1;
+const unsigned int _BUFF_SIZE2 = 300;
 const unsigned int _NUM_BUFF2 = 10;
 
 // static variables
@@ -39,10 +40,19 @@ static uint16_t supportBuffer[_BUFF_SIZE] = { 0 };
 
 // buffer DSPloop - UART
 static BufferQueue<float, _BUFF_SIZE2, _NUM_BUFF2> bufferQueue2;
-static float supportBuffer2[_BUFF_SIZE2] = { 0 };
-static unsigned int currPos2 = 0;
+//static float supportBuffer2[_BUFF_SIZE2] = { 0 };
+//static unsigned int currPos2 = 0;
 static condition_variable cv;
 static mutex m;
+
+// filtfilt DSP
+static vectord b_coeff_bandpass = { 0.199880906801133,0,-0.599642720403399,0,0.599642720403399,0,-0.199880906801133 };
+static vectord a_coeff_bandpass = { 1,-2.13183455555828,1.47978011393210,-0.679740843101842,0.584825906895303,-0.218461835750097,-0.0211926261278646 };
+static vectord b_coeff_bandstop = { 0.991153595101663,-3.77064677042227,5.56847615976590,-3.77064677042227,0.991153595101663 };
+static vectord a_coeff_bandstop = { 1,-3.78739953308251,5.56839789935512,-3.75389400776205,0.982385450614124 };
+static vectord input_signal;
+static vectord y_filtfilt_out;
+static vectord y_filtfilt_out2;
 
 /*
 * ADC_IRQHandlerImpl()
@@ -97,6 +107,7 @@ void __attribute__((used)) ADC_IRQHandlerImpl()
     }
 }
 
+
 void __attribute__((naked)) ADC_IRQHandler()
 {
     saveContext();
@@ -133,46 +144,36 @@ void DSPloop()
         }
 
         /** ADC -> DSP **/
-
-        // example of DSP, average value
-        float avg = 0.0;
-        for(size_t i = 0; i < buff_size; ++i)
-        {
-            avg += buff[i];
-        }
-        avg = avg * 0.002; // avg = sum/500
-        
+        input_signal.insert(input_signal.end(), &buff[0], &buff[buff_size]);
         bufferQueue.bufferEmptied();
+        
+        
+        // bandpass
+        filtfilt(b_coeff_bandpass, a_coeff_bandpass, input_signal, y_filtfilt_out);
+        input_signal.clear();
+
+        // bandstop
+        filtfilt(b_coeff_bandstop, a_coeff_bandstop, y_filtfilt_out, y_filtfilt_out2);
+        y_filtfilt_out.clear();
 
         /** DSP -> UART **/
-        if(currPos2 < _BUFF_SIZE2)
+        float * buff2 = nullptr;
         {
-            supportBuffer2[currPos2] = avg;
-            ++currPos2;
+            unique_lock<mutex> lock(m);
+            while(!bufferQueue2.tryGetWritableBuffer(buff2))
+            {
+                cv.wait(lock);
+            }
         }
 
-        if(currPos2 >= _BUFF_SIZE2)
+        for(size_t i = 0; i < _BUFF_SIZE2; ++i)
         {
-            float * buff2 = nullptr;
-            {
-                unique_lock<mutex> lock(m);
-                while(!bufferQueue2.tryGetWritableBuffer(buff2))
-                {
-                    cv.wait(lock);
-                }
-            }
-
-            for(size_t i = 0; i < _BUFF_SIZE2; ++i)
-            {
-                buff2[i] = supportBuffer2[i];   
-            }
-            cv.notify_all();
-            bufferQueue2.bufferFilled(_BUFF_SIZE2);
-
-            // resetting condition
-            currPos2 = 0;
-            memset(supportBuffer2, 0, sizeof(supportBuffer2));
+            buff2[i] = y_filtfilt_out2[i];  
         }
+        
+        cv.notify_all();
+        bufferQueue2.bufferFilled(_BUFF_SIZE2);
+        y_filtfilt_out2.clear();
     }
 }
 
@@ -196,7 +197,7 @@ int main()
 
         for(size_t i = 0; i < buff_size; ++i)
         {
-            printf("Avg: %.3f\n", buff[i]);
+            printf("%.3f\n", buff[i]);
         }
         bufferQueue2.bufferEmptied();
     }
