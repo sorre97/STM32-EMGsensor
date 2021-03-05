@@ -107,7 +107,7 @@ void EMGsensor::initTim()
     __MSX_HAL_MASK_CLEAR(TIM3->CR1, TIM_CR1_DIR);   // upcounting
     __MSX_HAL_MASK_SET(TIM3->CR2, TIM_CR2_MMS_1);   // update event as output trigger
 
-    // 500Hz sampling
+    // 1000Hz sampling
     __MSX_HAL_REG_SET(TIM3->PSC, 42-1);             // prescaler 
     __MSX_HAL_REG_SET(TIM3->ARR, 1000-1);           // counter register, SHOULD BE 2000, for some reason 42Mhz and not 84Mhz
 
