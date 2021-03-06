@@ -82,6 +82,6 @@ where N is the order of the filter, `a_i` are denumerators coefficient and `b_i`
 
 [ - ] `DSPemgsignal.m` __Matlab__ file inside the `misc/` folder can be used to plot either live receiving data from serial port using or simulated values.
 
-[ - ] `xxx.ipynb ` __Python notebook__ file inside the `misc/` folder can be used to plot either live receiving data from serial port using or simulated values.
+[ - ] ~~`xxx.ipynb ` __Python notebook__ file inside the `misc/` folder can be used to plot either live receiving data from serial port using or simulated values.~~ (currently not available)
 
 
