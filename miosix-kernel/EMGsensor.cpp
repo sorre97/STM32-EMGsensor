@@ -4,7 +4,7 @@
 
 /**
  * EMGsensor()
- * Constructor initializes the peripherals in POLLING mode using default pins
+ * Default constructor. initializes the peripherals in POLLING mode using default pins
  * Redirects to secondary constructor
  * Mode: POLLING
  */
@@ -12,7 +12,7 @@ EMGsensor::EMGsensor() : EMGsensor::EMGsensor(EMGsensormod::POLLING) {}
 
 /**
  * EMGsensor(Mode mode)
- * Constructor initializes the peripherals in selected mode using default pins if not selected
+ * Constructor initializes the peripherals in selected mode.
  * Input: Mode mode. Selects operative mode of the sensor
  * Pins: Vin(analog) -> PA0 (ADC1 channel 0)
  * Mode: POLLING, INTERRUPT, DMA
@@ -36,13 +36,20 @@ EMGsensor::EMGsensor(EMGsensormod::Mode mode)
     }
 }
 
+/**
+ * ~EMGsensor()
+ * Default distructor
+ */
 EMGsensor::~EMGsensor() {}
 
 /* Sensor configuration */
 /**
  * initADC()
- * Enables ADC clock, sets cycles of conversion, turns ADC power on, selects channel
+ * Enables ADC clock, sets cycles of conversion, turns ADC power on, selects 
+ * channel and bits of precision.
  * Access: private
+ * Input: void
+ * Return type: void
  */
 void EMGsensor::initADC()
 {
@@ -69,12 +76,15 @@ void EMGsensor::configurePolling()
 
 /**
  * configureInterrupt()
- * Configures ADC for interrupt using EOCIE flag
+ * Configures ADC conversion using interrupt and external timer to trigger conversion.
+ * Input: void
  * Access: private
+ * Input: void
+ * Return type: void
  */
 void EMGsensor::configureInterrupt()
 {
-    NVIC_EnableIRQ(ADC_IRQn);           // enabling NVIC for ADC
+    NVIC_EnableIRQ(ADC_IRQn);          // enabling NVIC for ADC
     NVIC_SetPriority(ADC_IRQn, 5);     // medium priority 5
 
     __MSX_HAL_MASK_SET(ADC1->CR1, ADC_CR1_EOCIE);    // enabling interrupt at EOC
@@ -82,14 +92,17 @@ void EMGsensor::configureInterrupt()
     __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_EXTEN_0);  // external trigger detection on rising edge
     __MSX_HAL_MASK_SET(ADC1->CR2, ADC_CR2_EXTSEL_3); // trigger on external event TIM3 TRGO
 
-    EMGsensor::initTim();
+    EMGsensor::initTim();  // enables TIM3 to trigger 1000hz conversion
 }
 
 /**
  * initTim()
- * Configures TIM3 to output trigger event with Xhz frequency
- * TIM3 frequency = 84Mhz / (counter+1 + prescaler+1)
+ * Configures TIM3 to output trigger event with 1000hz frequency
+ * TIM3 frequency = 42Mhz / (counter+1 + prescaler+1) 
+ * (prescaled by 2 84Mhz internal clock)
  * Access: private
+ * Input: void
+ * Return type: void
  */
 void EMGsensor::initTim()
 {
@@ -109,7 +122,7 @@ void EMGsensor::initTim()
 
     // 1000Hz sampling
     __MSX_HAL_REG_SET(TIM3->PSC, 42-1);             // prescaler 
-    __MSX_HAL_REG_SET(TIM3->ARR, 1000-1);           // counter register, SHOULD BE 2000, for some reason 42Mhz and not 84Mhz
+    __MSX_HAL_REG_SET(TIM3->ARR, 1000-1);           // counter register
 
     __MSX_HAL_MASK_SET(TIM3->EGR, TIM_EGR_UG);      // update ARR shadow register
     __MSX_HAL_REG_CLEAR(TIM3->SR);                  // clear interrupt flag caused by setting UG
@@ -127,6 +140,7 @@ void EMGsensor::configureDMA()
  * readValue()
  * This function reads converted ADC value in the data register and returns it
  * Access: public
+ * Input: void
  * Return type: uint16_t
  */
 uint16_t EMGsensor::readPolling()
@@ -143,6 +157,7 @@ uint16_t EMGsensor::readPolling()
  * This function gets a value from the queue and returns it
  * If the queue is empty, the thread is put to sleep until notify
  * Access: public
+ * Input: void
  * Return type: uint16_t
  */
 uint16_t EMGsensor::getValue()
@@ -159,6 +174,7 @@ uint16_t EMGsensor::getValue()
  * This function gets a value from the queue and returns it
  * If the queue is empty, the thread is put to sleep until notify
  * Access: public
+ * Input: void
  * Return type: uint16_t
  */
 uint16_t EMGsensor::IRQgetValue()
@@ -173,6 +189,7 @@ uint16_t EMGsensor::IRQgetValue()
  * Wrapper function of size for Queue class
  * This function returns the size of the queue
  * Access: public
+ * Input: void
  * Return type: unsigned int
  */
 unsigned int EMGsensor::queueSize()
@@ -188,6 +205,7 @@ unsigned int EMGsensor::queueSize()
  * This function puts an ADC converted value into queue of values.
  * If the queue is full, the thread is put to sleep until notify
  * Access: public
+ * Input: const uint16_t &val, value to be inserted
  * Return type: void
  */
 void EMGsensor::putValue(const uint16_t &val)
@@ -202,7 +220,8 @@ void EMGsensor::putValue(const uint16_t &val)
  * This function puts an ADC converted value into queue of values.
  * This function returns true only if the queue is not full
  * Access: public
- * Return type: bool
+ * Input: const uint16_t &val, value to be inserted
+ * Return type: bool (true if value inserted, false otherwise)
  */
 bool EMGsensor::IRQputValue(const uint16_t &val)
 {
@@ -215,6 +234,7 @@ bool EMGsensor::IRQputValue(const uint16_t &val)
  * Wrapper function of isFull for Queue class
  * This function returns true only if the queue is full
  * Access: public
+ * Input: void
  * Return type: bool
  */
 bool EMGsensor::isQueueFull()
@@ -228,6 +248,7 @@ bool EMGsensor::isQueueFull()
  * Wrapper function of isEmpty for Queue class
  * This function returns true only if the queue is empty
  * Access: public
+ * Input: void
  * Return type: bool
  */
 bool EMGsensor::isQueueEmpty()

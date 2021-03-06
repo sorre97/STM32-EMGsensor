@@ -1,11 +1,13 @@
 #ifndef MSX_HAL_H
 #define MSX_HAL_H
 
-/*****************************
- * Explaination of MSX_HAL_H
- * [...]
- * [...]
-******************************/
+/*********************************************************************
+ * The idea of this class is to abstract hardware implementation 
+ * E.g. ADC_handler_typedef ADC
+ * registers settable e.g. ADC.EOICS = ENABLE etc...
+ * or e.g. ADC.config(ADCconfigStruct)...
+ * (so far only abstraction on register mask and bit set is provided)
+**********************************************************************/
 
 /* Register Masking */
 #define __MSX_HAL_MASK_SET(__REGISTER__, __MASK__) ((__REGISTER__) |= (__MASK__))
