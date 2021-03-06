@@ -1,7 +1,6 @@
 ![GPL license](https://img.shields.io/badge/license-GPL-blue.svg)
 ![Generic badge](https://img.shields.io/badge/build-pass-green.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/sorre97/STM32-EMGsensor)
-
 ![Generic badge](https://img.shields.io/badge/RTOS-miosix-orange.svg)
 ![made-with-c++](https://img.shields.io/badge/Made%20with-C/C++-1f425f.svg)
 
@@ -38,6 +37,7 @@ Digital signal is lively processed in order to remove AC noise, remove DC offset
 The applied DSP makes use of two __IIR__ filters (bandpass and stopband) and __Zero-phase filtering__ tecnhinque in order to avoid filtering delay. Zero-phase filtering is a non-causal procedure, so it cannot be done in real time. That is why blocks of 300 samples are converted each time making a piece-wise filtering on the whole incoming signal. Because of that, filter's initial conditions was necessary in order to avoid DC noise on interval borders. 
 
 ![til](./misc/EMGcomparison.gif)<br>
+
 <sub><sup>Please note: both subplots have different ylim. The file containing this simulation can be found in the `misc/DSPemgsignal.m` file.</sub></sup>
 
 	y[t] = b[0] x[t] + b[1] x[t-1] + ... - a[1] y[t-1] - a[2] y[t-2] - ...
@@ -47,7 +47,7 @@ The general form of a discrete filter is
 
 ![equation](https://latex.codecogs.com/svg.latex?%7B%5Ccolor%7BDarkOrange%7D%20H%28z%29%20%3D%20%5Cfrac%7BY%28z%29%7D%7BX%28z%29%7D%20%3D%20%5Cfrac%7B%5Csum_%7Bi%20%3D%200%7D%5E%7BN%7D%20b_i%20%5Ccdot%20z%5E%7B-1%7D%7D%7B1%20-%20%5Csum_%7Bi%20%3D%201%7D%5E%7BN%7D%20a_i%20%5Ccdot%20z%5E%7B-1%7D%7D%7D)
 
-where N is the order of the filter, ![equation](https://latex.codecogs.com/gif.latex?%7B%5Ccolor%7BDarkOrange%7D%20a_%7Bi%7D%7D) are denumerators coefficient and ![equation](https://latex.codecogs.com/gif.latex?%7B%5Ccolor%7BDarkOrange%7D%20b_%7Bi%7D%7D) are denominator coefficients.
+where N is the order of the filter, `a_i` are denumerators coefficient and `b_i` are denominator coefficients.
 
 ##### Bandpass
 7<sub>th</sub> order IIR filter (30hz, 300hz)
