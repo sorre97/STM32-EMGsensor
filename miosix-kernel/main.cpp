@@ -144,8 +144,11 @@ void DSPloop()
         
         // reading values from buffer
         input_signal.insert(input_signal.end(), &buff[0], &buff[buff_size]);
-        bufferQueue.bufferEmptied();
-        
+        {
+            FastInterruptDisableLock dLock;
+            bufferQueue.bufferEmptied();
+        }
+
         // bandpass (30hz-300hz)
         filtfilt(b_coeff_bandpass, a_coeff_bandpass, input_signal, y_filtfilt_out);
         input_signal.clear();
@@ -172,7 +175,10 @@ void DSPloop()
         }
     
         y_filtfilt_out2.clear();
-        bufferQueue2.bufferFilled(_BUFF_SIZE2);
+        {
+            unique_lock<mutex> lock(m);
+            bufferQueue2.bufferFilled(_BUFF_SIZE2);
+        }
         consumer_cv.notify_all();
     }
 }
@@ -209,7 +215,10 @@ int main()
             printf("%.4f\n", buff[i]);
         }
 
-        bufferQueue2.bufferEmptied();
+        {
+            unique_lock<mutex> lock(m);
+            bufferQueue2.bufferEmptied();
+        }
         producer_cv.notify_all();
         
     }
