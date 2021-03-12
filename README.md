@@ -45,7 +45,7 @@ Filtering is done twice for each filtering, one back and one forth inverting the
 
 The general form of a discrete filter is
 
-![equation](https://latex.codecogs.com/svg.latex?%7B%5Ccolor%7BDarkOrange%7D%20H%28z%29%20%3D%20%5Cfrac%7BY%28z%29%7D%7BX%28z%29%7D%20%3D%20%5Cfrac%7B%5Csum_%7Bi%20%3D%200%7D%5E%7BN%7D%20b_i%20%5Ccdot%20z%5E%7B-1%7D%7D%7B1%20-%20%5Csum_%7Bi%20%3D%201%7D%5E%7BN%7D%20a_i%20%5Ccdot%20z%5E%7B-1%7D%7D%7D)
+<img src="./misc/equation.png" width="250"/>
 
 where N is the order of the filter, `a_i` are denumerators coefficient and `b_i` are denominator coefficients.
 
@@ -60,8 +60,9 @@ where N is the order of the filter, `a_i` are denumerators coefficient and `b_i`
 ##### Stopband
 5<sub>th</sub> order IIR filter (50hz)
 	
-    a_coeff: 0.991153595101663,-3.77064677042227,5.56847615976590,-3.77064677042227,0.991153595101663
-    b_coeff 1,-3.78739953308251,5.56839789935512,-3.75389400776205,0.982385450614124
+    a_coeff 1,-3.78739953308251,5.56839789935512,-3.75389400776205,0.982385450614124
+    b_coeff: 0.991153595101663,-3.77064677042227,5.56847615976590,-3.77064677042227,0.991153595101663
+    
 
 ![til](./misc/stopband.png)<br>
 
