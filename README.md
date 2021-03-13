@@ -86,3 +86,9 @@ where N is the order of the filter, `a_i` are denumerators coefficient and `b_i`
 [ - ] ~~`xxx.ipynb ` __Python notebook__ file inside the `misc/` folder can be used to plot either live receiving data from serial port using or simulated values.~~ (currently not available)
 
 
+## Future development
+[ + ] Feature extraction on filtered signal (AFB, DAMV, DASDV, DLD, DTM...)
+[ + ] Movement prediciton using machine learning (KNN, SVM) or neural netowkrs
+[ + ] Hardware abstraction construct
+
+
